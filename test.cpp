@@ -2,6 +2,9 @@
 #include <unistd.h>
 #include <stdio.h>
 #include "gamepad.h"
+#include "emumice.hpp"
+
+using namespace Emumice;
 
 static int LAnalog_X = 128;
 static int LAnalog_Y = 128;
@@ -15,39 +18,100 @@ static int RFButton = 0;
 static int LTButton = 0;
 static int RTButton = 0;
 
+static float move_x = 0;
+static float move_y = 0;
+
 enum {
-    _unknown,
-    _click,
-    _move,
-    _drag
+    UNKNOWN,
+    CLICK,
+    DRAG
+};
+
+enum {
+    MOVE,
+    FIRE,
+    FIRE_A,
+    FIRE_B,
+    FIRE_C,
+    FIRE_D,
+    FIRE_E,
+    FIRE_F
 };
 
 struct Mapping {
     int key;
-    int ax;
-    int ay;
-    int bx;
-    int by;
+    int x;
+    int y;
+    int r;
     int event;
 };
 
 const Mapping mapping[] = {
-    { 'M', 380,785, 0,0, _click },
+    { MOVE, 380,785, 40, DRAG },
+    { FIRE, 1600,860, 0, CLICK },       // main ~ cross
+    { FIRE_A, 1500,940, 0, CLICK },     // minions ~ square
+    { FIRE_B, 1700,745, 0, CLICK },     // turrent ~ circle
+    { FIRE_C, 1360,870, 0, CLICK },     // skill A ~ left finger
+    { FIRE_D, 1456,700, 0, CLICK },     // skill B ~ right finger
+    { FIRE_E, 1610,610, 0, CLICK },     // special ~ right trigger
+    { FIRE_F, 1730,230, 0, CLICK },     // item ~ triangle
     { -1 }
 };
 
 static void send()
 {
-    if (LAnalog_X != 128 || LAnalog_Y != 128) {
-        printf("LX:%d LY:%d\n", -128 + LAnalog_X, -128 + LAnalog_Y);
-        // key - 'M'
+    const Mapping *m;
+    m = &mapping[MOVE];
+
+    /**************************
+       MOVE
+    **************************/
+    if (move_x == 0 && move_y == 0) {
+        move_x = m->x;
+        move_y = m->y;
     }
+
+    int tx = 0;
+    int ty = 0;
+    if (LAnalog_X != 128 || LAnalog_Y != 128) {
+        tx = m->x + (m->r * (LAnalog_X - 128) / 128);
+        ty = m->y + (m->r * (LAnalog_Y - 128) / 128);
+    } else {
+        tx = m->x;
+        ty = m->y;
+    }
+
+    float mx = (tx - move_x)/4;
+    float my = (ty - move_y)/4;
+
+    move_x += mx;
+    move_y += my;
+
+    float dcx = move_x - m->x;
+    float dcy = move_y - m->y;
+    float dc = dcx * dcx + dcy * dcy;
+
+    if (dc > 10) {
+        if (m->event == DRAG) {
+            mouse_drag(move_x, move_y, move_x + mx/4, move_y + my/4);
+        } else {
+            mouse_set(move_x, move_y);
+            mouse_click(btn_left);
+        }
+        // printf("%f %d %d - MOVE_X:%f MOVE_Y:%f\n", dc, LAnalog_X, LAnalog_Y, move_x, move_y);
+    }
+
+
+    /**************************
+       FIRE
+    **************************/
     if (RAnalog_X != 128 || RAnalog_Y != 128) {
         if ((RAnalog_X > 200 || RAnalog_X < 55) ||
             (RAnalog_Y > 200 || RAnalog_Y < 55)) {
             printf("RX:%d RY:%d\n", RAnalog_X, RAnalog_Y);
         }
     }
+
     if (LButton != 8) {
         /*
             0 - UP
@@ -64,25 +128,69 @@ static void send()
             3 - CIRCLE
             4 - TRIANGLE
         */
-        printf("R:%d\n", RButton);
+        // printf("R:%d\n", RButton);
+
+        m = NULL;
+        if (RButton == 2) {
+            m = &mapping[FIRE];
+        }
+        if (RButton == 1) {
+            m = &mapping[FIRE_A];
+        }
+        if (RButton == 3) {
+            m = &mapping[FIRE_B];
+        }
+        if (RButton == 4) {
+            m = &mapping[FIRE_F];
+        }
+
+        if (m) {
+            mouse_set(m->x, m->y);
+            mouse_click(btn_left);
+        }
     }
+
+    m = NULL;
     if (LFButton) {
         printf("LF\n");
+        m = &mapping[FIRE_C];
+        if (m) {
+            mouse_set(m->x, m->y);
+            mouse_click(btn_left);
+        }
     }
+
+    m = NULL;
     if (RFButton) {
         printf("RF\n");
+        m = &mapping[FIRE_D];
+        if (m) {
+            mouse_set(m->x, m->y);
+            mouse_click(btn_left);
+        }
     }
+
+    m = NULL;
     if (LTButton) {
-        printf("LT:%d\n", LTButton);
+        // printf("LT:%d\n", LTButton);
     }
+    m = NULL;
     if (RTButton) {
-        printf("RT:%d\n", RTButton);
+        // printf("RT:%d\n", RTButton);
+        m = &mapping[FIRE_E];
+        if (m) {
+            mouse_set(m->x, m->y);
+            mouse_click(btn_left);
+        }
     }
 }
 
 static void callback(int type, int page, int usage, int value)
 {
-    if (page == 65280) return;
+    if (page == 65280) {
+        send();
+        return;
+    }
 
     if (usage == 48) {
         LAnalog_X = value;

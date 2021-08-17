@@ -192,14 +192,16 @@ void mouse_set(Point p)
 
 void mouse_set(int x, int y)
 {
-   set_mouse_loc(Point(x,x));
+   set_mouse_loc(Point(x,y));
 }
 
 void mouse_drag(Point a, Point b, int w, int h, bool is_laptop)
 {
-    mouse_move(a, w, h, is_laptop);
+    mouse_set(a);
+    // mouse_move(a, w, h, is_laptop);
     mouse_button(btn_left, true);
-    mouse_move(b, w, h, is_laptop);
+    mouse_set(b);
+    // mouse_move(b, w, h, is_laptop);
     mouse_button(btn_left, false);
 }
 
