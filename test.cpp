@@ -15,10 +15,32 @@ static int RFButton = 0;
 static int LTButton = 0;
 static int RTButton = 0;
 
+enum {
+    _unknown,
+    _click,
+    _move,
+    _drag
+};
+
+struct Mapping {
+    int key;
+    int ax;
+    int ay;
+    int bx;
+    int by;
+    int event;
+};
+
+const Mapping mapping[] = {
+    { 'M', 380,785, 0,0, _click },
+    { -1 }
+};
+
 static void send()
 {
     if (LAnalog_X != 128 || LAnalog_Y != 128) {
-        printf("LX:%d LY:%d\n", LAnalog_X, LAnalog_Y);
+        printf("LX:%d LY:%d\n", -128 + LAnalog_X, -128 + LAnalog_Y);
+        // key - 'M'
     }
     if (RAnalog_X != 128 || RAnalog_Y != 128) {
         if ((RAnalog_X > 200 || RAnalog_X < 55) ||
