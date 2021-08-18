@@ -71,6 +71,7 @@ const Mapping mapping[] = {
     { -1 }
 };
 
+static bool hasFireDir = false;
 static int cad = 0;
 const char *cad1 = "11111111";
 const char *cad2 = "11011011";
@@ -82,6 +83,22 @@ const char* get_cadence(int k) {
     if (k <= 1) return cad3;
     if (k == 2) return cad2;
     return cad1;
+}
+
+void fire(int x, int y, bool hasDir) {
+    if (hasFireDir && hasDir) {
+        // drag!
+        int radius = 80;
+        int tx = x + (radius * (RAnalog_X - 128) / 128);
+        int ty = y + (radius * (RAnalog_Y - 128) / 128);
+        printf("Fire Direction:%d %d %d %d\n", x, y, tx, ty);
+        mouse_drag(x, y, tx, ty);
+        hasFireDir = false;
+    } else {
+        mouse_set(x, y);
+        mouse_click(btn_left);
+        printf("Fire:%d %d\n", x, y);
+    }
 }
 
 static void send()
@@ -147,10 +164,12 @@ static void send()
     /**************************
        FIRE
     **************************/
+    hasFireDir = false;
     if (RAnalog_X != 128 || RAnalog_Y != 128) {
         if ((RAnalog_X > 200 || RAnalog_X < 55) ||
             (RAnalog_Y > 200 || RAnalog_Y < 55)) {
-            printf("RX:%d RY:%d\n", RAnalog_X, RAnalog_Y);
+            hasFireDir = true;
+            // printf("RX:%d RY:%d\n", RAnalog_X, RAnalog_Y);
         }
     }
 
@@ -173,20 +192,18 @@ static void send()
             m = &mapping[SKILL_C];
         }
         if (m) {
-            mouse_set(m->x, m->y);
-            mouse_click(btn_left);
+            // mouse_set(m->x, m->y);
+            // mouse_click(btn_left);
+            fire(m->x, m->y, true);
         }
 
         if (LButton == 0) {
             m = &mapping[UPGRADE_A];
-            mouse_set(m->x, m->y);
-            mouse_click(btn_left);
+            fire(m->x, m->y, false);
             m = &mapping[UPGRADE_B];
-            mouse_set(m->x, m->y);
-            mouse_click(btn_left);
+            fire(m->x, m->y, false);
             m = &mapping[UPGRADE_C];
-            mouse_set(m->x, m->y);
-            mouse_click(btn_left);
+            fire(m->x, m->y, false);
 
         }
     }
@@ -214,8 +231,9 @@ static void send()
         }
 
         if (m) {
-            mouse_set(m->x, m->y);
-            mouse_click(btn_left);
+            // mouse_set(m->x, m->y);
+            // mouse_click(btn_left);
+            fire(m->x, m->y, true);
         }
     }
 
@@ -224,8 +242,7 @@ static void send()
         printf("LF\n");
         m = &mapping[FIRE_C];
         if (m) {
-            mouse_set(m->x, m->y);
-            mouse_click(btn_left);
+            fire(m->x, m->y, true);
         }
     }
 
@@ -234,8 +251,7 @@ static void send()
         printf("RF\n");
         m = &mapping[FIRE_D];
         if (m) {
-            mouse_set(m->x, m->y);
-            mouse_click(btn_left);
+            fire(m->x, m->y, true);
         }
     }
 
@@ -248,8 +264,7 @@ static void send()
         // printf("RT:%d\n", RTButton);
         m = &mapping[FIRE_E];
         if (m) {
-            mouse_set(m->x, m->y);
-            mouse_click(btn_left);
+            fire(m->x, m->y, true);
         }
     }
 }
