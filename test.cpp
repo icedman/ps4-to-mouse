@@ -24,7 +24,8 @@ static float move_y = 0;
 enum {
     UNKNOWN,
     CLICK,
-    DRAG
+    DRAG,
+    KEY
 };
 
 enum {
@@ -35,7 +36,13 @@ enum {
     FIRE_C,
     FIRE_D,
     FIRE_E,
-    FIRE_F
+    FIRE_F,
+    SKILL_A,
+    SKILL_B,
+    SKILL_C,
+    UPGRADE_A,
+    UPGRADE_B,
+    UPGRADE_C
 };
 
 struct Mapping {
@@ -47,7 +54,7 @@ struct Mapping {
 };
 
 const Mapping mapping[] = {
-    { MOVE, 380,785, 40, DRAG },
+    { MOVE, 380,785, 40, KEY },
     { FIRE, 1600,860, 0, CLICK },       // main ~ cross
     { FIRE_A, 1500,940, 0, CLICK },     // minions ~ square
     { FIRE_B, 1700,745, 0, CLICK },     // turrent ~ circle
@@ -55,11 +62,33 @@ const Mapping mapping[] = {
     { FIRE_D, 1456,700, 0, CLICK },     // skill B ~ right finger
     { FIRE_E, 1610,610, 0, CLICK },     // special ~ right trigger
     { FIRE_F, 1730,230, 0, CLICK },     // item ~ triangle
+    { SKILL_A, 975,875, 0, CLICK },     // skill ~ L
+    { SKILL_B, 1090,875, 0, CLICK },     // skill ~ D
+    { SKILL_C, 1215,875, 0, CLICK },     // skill ~ R
+    { UPGRADE_A, 1290,788, 0, CLICK },     // upgrade
+    { UPGRADE_B, 1374,623, 0, CLICK },     // upgrade
+    { UPGRADE_C, 1550,540, 0, CLICK },     // upgrade
     { -1 }
 };
 
+static int cad = 0;
+const char *cad1 = "11111111";
+const char *cad2 = "11011011";
+const char *cad3 = "10101010";
+
+const char* get_cadence(int k) {
+    if (k < 0) k *= -1;
+    k = k / 10;
+    if (k <= 1) return cad3;
+    if (k == 2) return cad2;
+    return cad1;
+}
+
 static void send()
 {
+    cad++;
+    if (cad >= 8) cad = 0;
+
     const Mapping *m;
     m = &mapping[MOVE];
 
@@ -92,7 +121,20 @@ static void send()
     float dc = dcx * dcx + dcy * dcy;
 
     if (dc > 10) {
-        if (m->event == DRAG) {
+        if (m->event == KEY) {
+            if (dcx * dcx > 10) {
+                if (get_cadence(dcx)[cad] == '1') {
+                    printf("X:%f\n", dcx);
+                    key_type(keyCodeForKeyString(dcx < 0 ? "a":"d"));
+                }
+            }
+            if (dcy * dcy > 10) {
+                if (get_cadence(dcy)[cad] == '1') {
+                    printf("Y:%f\n", dcy);
+                    key_type(keyCodeForKeyString(dcy < 0 ? "w":"s"));
+                }
+            }
+        } else if (m->event == DRAG) {
             mouse_drag(move_x, move_y, move_x + mx/4, move_y + my/4);
         } else {
             mouse_set(move_x, move_y);
@@ -120,6 +162,33 @@ static void send()
             6 - LEFT
         */
         printf("L:%d\n", LButton);
+        m = NULL;
+        if (LButton == 6) {
+            m = &mapping[SKILL_A];
+        }
+        if (LButton == 4) {
+            m = &mapping[SKILL_B];
+        }
+        if (LButton == 2) {
+            m = &mapping[SKILL_C];
+        }
+        if (m) {
+            mouse_set(m->x, m->y);
+            mouse_click(btn_left);
+        }
+
+        if (LButton == 0) {
+            m = &mapping[UPGRADE_A];
+            mouse_set(m->x, m->y);
+            mouse_click(btn_left);
+            m = &mapping[UPGRADE_B];
+            mouse_set(m->x, m->y);
+            mouse_click(btn_left);
+            m = &mapping[UPGRADE_C];
+            mouse_set(m->x, m->y);
+            mouse_click(btn_left);
+
+        }
     }
     if (RButton != 0) {
         /*
@@ -228,9 +297,9 @@ static void callback(int type, int page, int usage, int value)
     // printf("type=%d, page=%d, usage=%d, value=%d\n", type, page, usage, value);
 
     /* end main loop if push esc key */
-    if (2 == type && 7 == page && 41 == usage && 0 == value) {
-        CFRunLoopStop(CFRunLoopGetCurrent());
-    }
+    // if (2 == type && 7 == page && 41 == usage && 0 == value) {
+    //     CFRunLoopStop(CFRunLoopGetCurrent());
+    // }
 }
 
 int main()

@@ -49,6 +49,11 @@ void mouse_move(int x, int y, int w=0, int h=0, bool laptop=false);
 void mouse_drag(Point a, Point b, int w=0, int h=0, bool laptop=false);
 void mouse_drag(int ax, int ay, int bx, int by, int w=0, int h=0, bool laptop=false);
 
+int keyCodeForKeyString(const char * keyString);
+void key_press(int key);
+void key_release(int key);
+void key_type(int key);
+
 //------------------------------------------------------------------------------
 
 }; // namespece Emumice
